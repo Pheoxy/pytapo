@@ -170,15 +170,15 @@ def test_c_shared_transport_hass_loop(fake_hub):
     r = slow_search_while_hub_polls(fake_hub, shared=True, use_hass=True)
     report("c shared, hass", r)
     assert isinstance(r["child_err"], requests.exceptions.ReadTimeout)
-    # ReadTimeout -> clear session, back off, log in again, retry once, raise
-    assert r["searches"] == 2 and r["timeouts"] == 2
+    # ReadTimeout -> clear session and raise; the slow search is not sent again
+    assert r["searches"] == 1 and r["timeouts"] == 1
     assert r["logins"] == 1
     # the send lock serialises: one request at a time, no seq races
     assert r["max_in_flight"] == 1
     assert r["seq_errors"] == r["tag_errors"] == 0
     assert r["poll_errors"] == []
-    # the hub poll waits for the whole child call (2 timeouts + backoff + login)
-    assert r["poll_max"] > 0.9
+    # the hub poll waits for the child call (one timeout), then logs in again
+    assert 0.4 < r["poll_max"] < 0.9
     assert r["recovery_logins"] == 0
 
 
