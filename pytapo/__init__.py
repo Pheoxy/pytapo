@@ -44,6 +44,7 @@ class Tapo:
         playerID=None,
         printWarnInformation=True,
         transportMethod=None,
+        transport=None,
     ):
 
         self.logger = Logger(printDebugInformation, printWarnInformation)
@@ -58,7 +59,10 @@ class Tapo:
             self.controlPort = 443
         else:
             self.controlPort = controlPort
-        if isKLAP is not None:
+        if transport is not None:
+            # hub child: reuse the hub's logged-in transport, the hub keeps one session per user
+            self.isKLAP = transport.method == "klap"
+        elif isKLAP is not None:
             self.isKLAP = isKLAP
         else:
             self.isKLAP = self._isKLAP()
@@ -73,7 +77,9 @@ class Tapo:
             self.playerID = playerID
 
         legacyLoginOffered = False
-        if transportMethod is None:
+        if transport is not None:
+            transport_method = transport.method
+        elif transportMethod is None:
             if self.isKLAP:
                 transport_method = "klap"
             else:
@@ -94,21 +100,24 @@ class Tapo:
 
         self.logger.debugLog(f"Transport method determined: {transport_method}")
 
-        self.transport = Transport(
-            host=host,
-            controlPort=controlPort,
-            user=user,
-            password=password,
-            logger=self.logger,
-            method=transport_method,
-            KLAPVersion=self.KLAPVersion,
-            retryStok=retryStok,
-            hass=hass,
-            asyncHandler=self.asyncHandler,
-            cloudPassword=cloudPassword,
-            reuseSession=reuseSession,
-            redactConfidentialInformation=redactConfidentialInformation,
-        )
+        if transport is not None:
+            self.transport = transport
+        else:
+            self.transport = Transport(
+                host=host,
+                controlPort=controlPort,
+                user=user,
+                password=password,
+                logger=self.logger,
+                method=transport_method,
+                KLAPVersion=self.KLAPVersion,
+                retryStok=retryStok,
+                hass=hass,
+                asyncHandler=self.asyncHandler,
+                cloudPassword=cloudPassword,
+                reuseSession=reuseSession,
+                redactConfidentialInformation=redactConfidentialInformation,
+            )
         if legacyLoginOffered and transport_method == "pytapo":
             # discover already answered what _isSecureConnection would probe for
             self.transport.isSecureConnectionCached = True
