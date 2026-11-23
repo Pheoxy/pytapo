@@ -321,9 +321,18 @@ class FakeHub:
             result = {"preset": {"preset": {"id": [], "name": []}}}
         elif method == "searchDateWithVideo":
             if who == "child":
-                result = {
-                    "playback": {"search_results": copy.deepcopy(self.search_results)}
-                }
+                # like the real hub: only days inside the asked date range
+                util = (params or {}).get("playback", {}).get("search_year_utility", {})
+                start = util.get("start_date", "00000000")
+                end = util.get("end_date", "99999999")
+                found = [
+                    copy.deepcopy(r)
+                    for r in self.search_results
+                    if start
+                    <= (r["date"] if "date" in r else list(r.values())[0]["date"])
+                    <= end
+                ]
+                result = {"playback": {"search_results": found}}
             else:
                 result = {}
         if result is None:
