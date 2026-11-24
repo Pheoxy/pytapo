@@ -52,7 +52,11 @@ async def getSnapshot(tapo, timeout=8):
 
 async def _snapshots(tapo, requests, timeout):
     """Yield one image (or None) per (media_type, start_time) on one session."""
-    mediaSession = await asyncio.to_thread(tapo.getMediaSession, StreamType.Download)
+    mediaSession = await asyncio.to_thread(
+        tapo.getMediaSession,
+        StreamType.Download,
+        media_type=requests[0][0] if requests else 0,
+    )
     client_id = await asyncio.to_thread(tapo.getUserID)
     mediaSession.set_window_size(50)
     async with mediaSession:

@@ -281,6 +281,12 @@ class pyTapo:
     async def _retry_on_exception(self, request, retry, err):
         if retry >= MAX_LOGIN_RETRIES:
             raise err
+        if isinstance(err, requests.exceptions.ReadTimeout):
+            # the device got the request and may still be working on it (a hub
+            # searching its recordings): sending it again only doubles the work
+            self.debugLog(f"Request timed out ({err}), clearing session.")
+            await self._clearSession()
+            raise err
         self.debugLog(
             f"Request failed ({err}), clearing session and retrying: {retry + 1}/{MAX_LOGIN_RETRIES}"
         )
